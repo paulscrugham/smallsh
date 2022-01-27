@@ -11,18 +11,33 @@ int main()
 	char* inputString = NULL;
 	size_t buflen = 0;
 	struct userInput* input;
+	int sentinel = 1;
 
-	while (1) {
+	while (sentinel) {
 		// Prompt user for input
 		printf(": ");
 		getline(&inputString, &buflen, stdin);
 
-		// Parse input
-		input = parseInput(inputString);
+		// Strip newline character from inputString
+		if (strlen(inputString) > 1) {
+			inputString[strcspn(inputString, "\n")] = 0;
+		}
+		
+		// Check if input was a comment
+		if (isComment(inputString) == 0) {
+			// Parse input
+			input = parseInput(inputString);
 
-		// Run command
+			if (strcmp(input->cmd, "exit") == 0) {
+				return 0;
+			}
 
-		// Print output
+			// Run command
+
+			// Print output
+		}
+
+
 	}
-
+	return 0;
 }

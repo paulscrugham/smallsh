@@ -43,3 +43,16 @@ struct userInput* parseInput(char* inputString) {
 
     return currInput;
 }
+
+int isComment(char* inputString) {
+    // Extract first space delimited token
+    char* token = strtok(inputString, " ");
+    char commentChar = '#';
+
+    if (token[0] == commentChar) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
