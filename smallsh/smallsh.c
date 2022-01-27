@@ -24,7 +24,7 @@ int main()
 		}
 		
 		// Check if input was a comment
-		if (isComment(inputString) == 0) {
+		if (isComment(inputString, '#') == 0) {
 			// Parse input
 			input = parseInput(inputString);
 
