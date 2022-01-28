@@ -44,6 +44,7 @@ int main(void)
 		// Parse input
 		input = parseInput(inputString);
 
+		// Check if command is a smallsh built-in
 		if (strcmp(input->cmd, "exit") == 0) {
 			// TODO: kill any other processes or jobs that smallsh started
 			return 0;
@@ -64,6 +65,10 @@ int main(void)
 		else if (strcmp(input->cmd, "status") == 0) {
 			// Run command
 
+		}
+		// Run an arbitrary command
+		else {
+			runArbitrary(input);
 		}
 
 		// Print output

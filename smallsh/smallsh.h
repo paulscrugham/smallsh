@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h> 
+#include <sys/wait.h>
 #include <sys/types.h>
 
 struct userInput
@@ -106,5 +107,28 @@ void cdBuiltIn(char* dirPath) {
     }
     else {
         chdir(getenv("HOME"));
+    }
+}
+
+void runArbitrary(struct userInput* input) {
+    // Fork a new process
+    pid_t spawnPid = fork();
+    int childStatus;
+
+    switch (spawnPid) {
+    case -1:
+        perror("fork()\n");
+        exit(1);
+        break;
+    case 0:
+        // Run an arbitrary command using execvp
+        execvp(input->cmd, input->args);
+        perror("execvpe");
+        exit(2);
+        break;
+    default:
+        spawnPid = waitpid(spawnPid, &childStatus, 0);
+        // exit(0);
+        break;
     }
 }
