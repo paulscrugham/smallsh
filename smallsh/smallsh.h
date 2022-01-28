@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> 
 #include <sys/types.h>
 
 struct userInput
@@ -46,14 +47,33 @@ struct userInput* parseInput(char* inputString) {
 }
 
 
+int countStringInstances(char* var, char* sentence) {
+    int numInstances = 0;
+    char* start = sentence;
+
+    while ((start = strstr(start, var)) != NULL) {
+        numInstances++;
+        start = start + strlen(var);
+    }
+
+    return numInstances;
+}
+
+
 int expandVar(char* var, char* newVar, char* sentence) {
     int sentinel = 0;
     char* start = sentence;
     char* next;
 
+    // Resize sentence to fit new expanded variables
+    int numVars = countStringInstances(var, sentence);
+    int delta = (strlen(newVar) - strlen(var)) * numVars;
+    sentence = realloc(sentence, (strlen(sentence) + delta) * sizeof(char));
+
     // Check if var exists in sentence
     while ((start = strstr(start, var)) != NULL) {
         // Replace this occurrence of var in sentence with newVar
+        
         next = strdup(start + strlen(var));
         *start = 0;
         strcat(sentence, newVar);

@@ -8,13 +8,13 @@
 
 int main(void)
 {
-	char* inputString = NULL;
 	char* exVar = "$$";
-	size_t buflen = 0;
-	struct userInput* input;
 	int sentinel = 1;
 
 	while (sentinel) {
+		char* inputString = NULL;
+		size_t buflen = 0;
+		struct userInput* input;
 		// Prompt user for input
 		printf(": ");
 		getline(&inputString, &buflen, stdin);
@@ -23,17 +23,20 @@ int main(void)
 		if (strlen(inputString) > 1) {
 			inputString[strcspn(inputString, "\n")] = 0;
 		}
-
-		// Expand any occurrences of "$$" to the program's PID
-		pid_t pid = getpid();
-		char newVar;
-		sprintf(newVar, "%d", pid);
-		if (expandVar(exVar, newVar, inputString)) {
-			printf("Variables expanded successfully!\n");
-		}
 		
 		// Check if input was a comment
 		if (isComment(inputString, '#') == 0) {
+			// Expand any occurrences of "$$" to the program's PID
+			pid_t pid = getpid();
+			char* newVar = malloc(sizeof(char) * 21);
+			sprintf(newVar, "%d", pid);
+			if (expandVar(exVar, newVar, inputString)) {
+				printf("Variables expanded successfully!\n");
+				printf(inputString);
+				printf("\n");
+			}
+			free(newVar);
+			
 			// Parse input
 			input = parseInput(inputString);
 
@@ -50,6 +53,7 @@ int main(void)
 			}
 			
 			// Print output
+			free(inputString);
 		}
 	}
 	return 0;
