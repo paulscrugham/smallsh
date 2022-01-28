@@ -14,8 +14,10 @@
 
 struct userInput
 {
-    char* cmd;
-    char* args[513];
+    char* args[514];
+    // char* inputRedir = NULL;
+    // char* outputRedir = NULL;
+    // int background = 0;
 };
 
 struct userInput* parseInput(char* inputString) {
@@ -39,10 +41,6 @@ struct userInput* parseInput(char* inputString) {
 
     // Null terminate the arguments array
     currInput->args[i] = NULL;
-
-    // Set the command variable
-    currInput->cmd = calloc(strlen(currInput->args[0]) + 1, sizeof(char));
-    strcpy(currInput->cmd, currInput->args[0]);
 
     return currInput;
 }
@@ -122,7 +120,7 @@ void runArbitrary(struct userInput* input) {
         break;
     case 0:
         // Run an arbitrary command using execvp
-        execvp(input->cmd, input->args);
+        execvp(input->args[0], input->args);
         perror("execvpe");
         exit(2);
         break;

@@ -45,11 +45,11 @@ int main(void)
 		input = parseInput(inputString);
 
 		// Check if command is a smallsh built-in
-		if (strcmp(input->cmd, "exit") == 0) {
+		if (strcmp(input->args[0], "exit") == 0) {
 			// TODO: kill any other processes or jobs that smallsh started
 			return 0;
 		}
-		else if (strcmp(input->cmd, "cd") == 0) {
+		else if (strcmp(input->args[0], "cd") == 0) {
 			// Run command
 			cdBuiltIn(input->args[1]);
 
@@ -62,7 +62,7 @@ int main(void)
 			printf(workingDir);
 			printf("\n");
 		}
-		else if (strcmp(input->cmd, "status") == 0) {
+		else if (strcmp(input->args[0], "status") == 0) {
 			// Run command
 
 		}
