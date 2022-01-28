@@ -87,12 +87,24 @@ int expandVar(char* var, char* newVar, char* sentence) {
 
 int isComment(char* inputString, char commentChar) {
     // Extract first space delimited token
-    char* token = strtok(inputString, " ");
+    char* temp = strdup(inputString);
+    char* token = strtok(temp, " ");
 
     if (token[0] == commentChar) {
+        free(temp);
         return 1;
     }
     else {
+        free(temp);
         return 0;
+    }
+}
+
+void cdBuiltIn(char* dirPath) {
+    if (dirPath) {
+        chdir(dirPath);
+    }
+    else {
+        chdir(getenv("HOME"));
     }
 }
