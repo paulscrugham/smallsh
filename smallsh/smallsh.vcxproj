@@ -91,6 +91,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="Makefile" />
+    <None Include="p3testscript" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="smallsh.c" />
