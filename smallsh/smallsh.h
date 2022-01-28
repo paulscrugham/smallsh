@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 struct userInput
 {
@@ -42,6 +43,26 @@ struct userInput* parseInput(char* inputString) {
     strcpy(currInput->cmd, currInput->args[0]);
 
     return currInput;
+}
+
+
+int expandVar(char* var, char* newVar, char* sentence) {
+    int sentinel = 0;
+    char* start = sentence;
+    char* next;
+
+    // Check if var exists in sentence
+    while ((start = strstr(start, var)) != NULL) {
+        // Replace this occurrence of var in sentence with newVar
+        next = strdup(start + strlen(var));
+        *start = 0;
+        strcat(sentence, newVar);
+        strcat(sentence, next);
+        start = start + strlen(newVar);
+
+        sentinel = 1;
+    }
+    return sentinel;
 }
 
 int isComment(char* inputString, char commentChar) {
