@@ -15,28 +15,54 @@
 struct userInput
 {
     char* args[514];
-    // char* inputRedir = NULL;
-    // char* outputRedir = NULL;
-    // int background = 0;
+    char* inputRedir;
+    char* outputRedir;
+    int background;
 };
 
 struct userInput* parseInput(char* inputString) {
     struct userInput* currInput = malloc(sizeof(struct userInput));
+
+    // Initialize struct values
+    currInput->inputRedir = NULL;
+    currInput->outputRedir = NULL;
+    currInput->background = 0;
     
     // For use with strtok_r
     char* saveptr;
 
-    // Tokenize the user input and store in an array
+    // Get the provided command
     char* token = strtok_r(inputString, " ", &saveptr);
     currInput->args[0] = calloc(strlen(token) + 1, sizeof(char));
     strcpy(currInput->args[0], token);
 
+    // Get command arguments
     int i = 1;
-    while (*saveptr) {
+    while (*saveptr && *saveptr != '<' && *saveptr != '>' && *saveptr != '&') {
         token = strtok_r(NULL, " ", &saveptr);
         currInput->args[i] = calloc(strlen(token) + 1, sizeof(char));
         strcpy(currInput->args[i], token);
         i++;
+    }
+
+    // Get redirect statements, if any
+    while (*saveptr && *saveptr != '&') {
+        token = strtok_r(NULL, " ", &saveptr);
+        if (*token == '<') {
+            token = strtok_r(NULL, " ", &saveptr);
+            currInput->inputRedir = calloc(strlen(token) + 1, sizeof(char));
+            strcpy(currInput->inputRedir, token);
+        }
+        else if (*token == '>') {
+            token = strtok_r(NULL, " ", &saveptr);
+            currInput->outputRedir = calloc(strlen(token) + 1, sizeof(char));
+            strcpy(currInput->outputRedir, token);
+        }
+    }
+
+    // Check if last token is an &
+    if (*saveptr && *saveptr == '&') {
+        currInput->background = 1;
     }
 
     // Null terminate the arguments array
