@@ -5,6 +5,7 @@
 // Date Due: 2/7/2022
 
 #define _GNU_SOURCE
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -110,6 +111,21 @@ int expandVar(char* var, char* newVar, char* sentence) {
     return sentinel;
 }
 
+int isEmpty(char* inputString) {
+    // Extract first space delimited token
+    char* temp = strdup(inputString);
+    char* token = strtok(temp, " ");
+
+    if (token) {
+        free(temp);
+        return 0;
+    }
+    else {
+        free(temp);
+        return 1;
+    }
+}
+
 int isComment(char* inputString, char commentChar) {
     // Extract first space delimited token
     char* temp = strdup(inputString);
@@ -145,6 +161,37 @@ void runArbitrary(struct userInput* input) {
         exit(1);
         break;
     case 0:
+        // Check for any input/output redirection
+        if (input->inputRedir) {
+            // Create file descriptor
+            int fd = open(input->inputRedir, O_RDONLY);
+            if (fd == -1) {
+                // TODO: Set exit status
+                printf("open() failed on \"%s\"\n", input->inputRedir);
+                perror("Error");
+                exit(1);
+            }
+            // TODO: close fd
+
+            if (dup2(fd, 0) != -1) {
+                printf("dup2 succeeded for input redirection!");
+            }
+        }
+
+        if (input->outputRedir) {
+            int fd = open(input->outputRedir, O_WRONLY | O_CREAT | O_TRUNC, 0640);
+            if (fd == -1) {
+                printf("open() failed on \"%s\"\n", input->inputRedir);
+                perror("Error");
+                exit(1);
+            }
+            // TODO: close fd
+
+            if (dup2(fd, 1) != -1) {
+                printf("dup2 succeeded for output redirection!");
+            }
+        }
+
         // Run an arbitrary command using execvp
         execvp(input->args[0], input->args);
         perror("execvpe");

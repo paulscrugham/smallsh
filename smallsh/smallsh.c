@@ -24,6 +24,11 @@ int main(void)
 		if (strlen(inputString) > 1) {
 			inputString[strcspn(inputString, "\n")] = 0;
 		}
+
+		// Check if input is empty
+		if (isEmpty(inputString)) {
+			continue;
+		}
 		
 		// Check if input was a comment
 		if (isComment(inputString, '#')) {
@@ -34,11 +39,7 @@ int main(void)
 		pid_t pid = getpid();
 		char* newVar = malloc(sizeof(char) * 21);
 		sprintf(newVar, "%d", pid);
-		if (expandVar(exVar, newVar, inputString)) {
-			printf("Variables expanded successfully!\n");
-			printf(inputString);
-			printf("\n");
-		}
+		expandVar(exVar, newVar, inputString);
 		free(newVar);
 
 		// Parse input
@@ -52,15 +53,6 @@ int main(void)
 		else if (strcmp(input->args[0], "cd") == 0) {
 			// Run command
 			cdBuiltIn(input->args[1]);
-
-			// test print
-			char* workingDir;
-			workingDir = malloc(256);
-			size_t wdBufLen = 256;
-			getcwd(workingDir, wdBufLen);
-			printf("TEST PRINT - CWD: ");
-			printf(workingDir);
-			printf("\n");
 		}
 		else if (strcmp(input->args[0], "status") == 0) {
 			// Run command
