@@ -161,7 +161,7 @@ void runArbitrary(struct userInput* input) {
         exit(1);
         break;
     case 0:
-        // Check for any input/output redirection
+        // Check for input redirection
         if (input->inputRedir) {
             // Create file descriptor
             int fd = open(input->inputRedir, O_RDONLY);
@@ -178,6 +178,7 @@ void runArbitrary(struct userInput* input) {
             }
         }
 
+        // Check for input redirection
         if (input->outputRedir) {
             int fd = open(input->outputRedir, O_WRONLY | O_CREAT | O_TRUNC, 0640);
             if (fd == -1) {
@@ -198,7 +199,13 @@ void runArbitrary(struct userInput* input) {
         exit(2);
         break;
     default:
-        spawnPid = waitpid(spawnPid, &childStatus, 0);
+        if (input->background) {
+            spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
+            // TODO: print status when background job is complete
+        }
+        else {
+            spawnPid = waitpid(spawnPid, &childStatus, 0);
+        }
         // exit(0);
         break;
     }
