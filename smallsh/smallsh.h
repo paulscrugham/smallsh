@@ -200,6 +200,7 @@ void runArbitrary(struct userInput* input) {
         break;
     default:
         if (input->background) {
+            printf("background pid is %d\n", getpid());
             spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
             // TODO: print status when background job is complete
         }
