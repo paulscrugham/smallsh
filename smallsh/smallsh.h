@@ -154,7 +154,6 @@ void cdBuiltIn(char* dirPath) {
 int runArbitrary(struct userInput* input) {
     // Fork a new process
     pid_t spawnPid = fork();
-    int childStatus;
 
     switch (spawnPid) {
     case -1:
@@ -199,17 +198,7 @@ int runArbitrary(struct userInput* input) {
         exit(2);
         break;
     default:
-        // Handle foreground vs background execution
-        if (input->background) {
-            printf("background pid in runArbitrary() is %d\n", spawnPid);
-            waitpid(spawnPid, &childStatus, WNOHANG);
-            return spawnPid;
-        }
-        else {
-            printf("foreground pid in runArbitrary() is %d\n", spawnPid);
-            waitpid(spawnPid, &childStatus, 0);
-            return childStatus;
-        }
+        return spawnPid;
 
         
     }
