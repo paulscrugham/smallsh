@@ -167,6 +167,7 @@ int runArbitrary(struct userInput* input) {
             if (fd == -1) {
                 // TODO: Set exit status
                 printf("cannot open %s for input\n", input->inputRedir);
+                fflush(stdout);
                 //perror("Error");
                 exit(1);
             }
@@ -174,6 +175,7 @@ int runArbitrary(struct userInput* input) {
 
             if (dup2(fd, 0) != -1) {
                 printf("dup2 succeeded for input redirection!");
+                fflush(stdout);
             }
         }
 
@@ -182,6 +184,7 @@ int runArbitrary(struct userInput* input) {
             int fd = open(input->outputRedir, O_WRONLY | O_CREAT | O_TRUNC, 0640);
             if (fd == -1) {
                 printf("cannot open %s for output\n", input->inputRedir);
+                fflush(stdout);
                 //perror("Error");
                 exit(1);
             }
@@ -189,6 +192,7 @@ int runArbitrary(struct userInput* input) {
 
             if (dup2(fd, 1) != -1) {
                 printf("dup2 succeeded for output redirection!");
+                fflush(stdout);
             }
         }
 

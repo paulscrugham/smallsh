@@ -25,9 +25,11 @@ int main(void)
 			printf("background pid %d is done: ", childPid);
 			if (WIFEXITED(bgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(bgStatus));
+				fflush(stdout);
 			}
 			else if (WIFSIGNALED(bgStatus)) {
 				printf("%s %d\n", termStatusMessage, WTERMSIG(bgStatus));
+				fflush(stdout);
 			}
 		}
 
@@ -74,9 +76,11 @@ int main(void)
 		else if (strcmp(input->args[0], "status") == 0) {
 			if (WIFEXITED(fgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(fgStatus));
+				fflush(stdout);
 			}
 			else if (WIFSIGNALED(fgStatus)) {
 				printf("%s %d\n", termStatusMessage, WTERMSIG(fgStatus));
+				fflush(stdout);
 			}
 		}
 		// Run an arbitrary command
@@ -85,6 +89,10 @@ int main(void)
 			// Handle foreground execution
 			if (!input->background) {
 				waitpid(childPid, &fgStatus, 0);
+			}
+			else {
+				printf("background pid is %d\n", childPid);
+				fflush(stdout);
 			}
 		}
 
