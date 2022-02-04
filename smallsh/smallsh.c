@@ -12,7 +12,7 @@ int main(void)
 	char* exVar = "$$";
 	int sentinel = 1;
 	pid_t childPid;
-	int fgStatus;
+	int fgStatus = -1;
 	int bgStatus;
 	char* exitStatusMessage = "exit value";
 	char* termStatusMessage = "terminated by signal";
@@ -77,7 +77,10 @@ int main(void)
 			cdBuiltIn(input->args[1]);
 		}
 		else if (strcmp(input->args[0], "status") == 0) {
-			if (WIFEXITED(fgStatus)) {
+			if (fgStatus == -1) {
+				printf("%s %d\n", exitStatusMessage, 0);
+			}
+			else if (WIFEXITED(fgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(fgStatus));
 				//fflush(stdout);
 			}
