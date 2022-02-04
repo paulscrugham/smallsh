@@ -25,11 +25,11 @@ int main(void)
 			printf("background pid %d is done: ", childPid);
 			if (WIFEXITED(bgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(bgStatus));
-				fflush(stdout);
+				//fflush(stdout);
 			}
 			else if (WIFSIGNALED(bgStatus)) {
 				printf("%s %d\n", termStatusMessage, WTERMSIG(bgStatus));
-				fflush(stdout);
+				//fflush(stdout);
 			}
 		}
 
@@ -39,8 +39,11 @@ int main(void)
 		printf(prompt);
 		getline(&inputString, &buflen, stdin);
 
-		// Strip newline character from inputString
-		if (strlen(inputString) > 1) {
+		// Check for empty input string. If not empty, strip trailing newline char
+		if (strlen(inputString) == 1) {
+			continue;
+		}
+		else if (strlen(inputString) > 1) {
 			inputString[strcspn(inputString, "\n")] = 0;
 		}
 
@@ -76,11 +79,11 @@ int main(void)
 		else if (strcmp(input->args[0], "status") == 0) {
 			if (WIFEXITED(fgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(fgStatus));
-				fflush(stdout);
+				//fflush(stdout);
 			}
 			else if (WIFSIGNALED(fgStatus)) {
 				printf("%s %d\n", termStatusMessage, WTERMSIG(fgStatus));
-				fflush(stdout);
+				//fflush(stdout);
 			}
 		}
 		// Run an arbitrary command
@@ -92,7 +95,7 @@ int main(void)
 			}
 			else {
 				printf("background pid is %d\n", childPid);
-				fflush(stdout);
+				//fflush(stdout);
 			}
 		}
 

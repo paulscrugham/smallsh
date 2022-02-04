@@ -151,6 +151,43 @@ void cdBuiltIn(char* dirPath) {
     }
 }
 
+int redirectInput(char* newInput) {
+    int fd = open(newInput, O_RDONLY);
+    if (fd == -1) {
+        // TODO: Set exit status
+        printf("cannot open %s for input\n", newInput);
+        //fflush(stdout);
+        //perror("Error");
+        exit(1);
+    }
+    // TODO: close fd
+
+    if (dup2(fd, 0) != -1) {
+        printf("dup2 succeeded for input redirection!");
+        //fflush(stdout);
+    }
+
+    return fd;
+}
+
+int redirectOutput(char* newOutput) {
+    int fd = open(newOutput, O_WRONLY | O_CREAT | O_TRUNC, 0640);
+    if (fd == -1) {
+        printf("cannot open %s for output\n", newOutput);
+        //fflush(stdout);
+        //perror("Error");
+        exit(1);
+    }
+    // TODO: close fd
+
+    if (dup2(fd, 1) != -1) {
+        printf("dup2 succeeded for output redirection!");
+        //fflush(stdout);
+    }
+
+    return fd;
+}
+
 int runArbitrary(struct userInput* input) {
     // Fork a new process
     pid_t spawnPid = fork();
@@ -162,38 +199,18 @@ int runArbitrary(struct userInput* input) {
     case 0:
         // Check for input redirection
         if (input->inputRedir) {
-            // Create file descriptor
-            int fd = open(input->inputRedir, O_RDONLY);
-            if (fd == -1) {
-                // TODO: Set exit status
-                printf("cannot open %s for input\n", input->inputRedir);
-                fflush(stdout);
-                //perror("Error");
-                exit(1);
-            }
-            // TODO: close fd
-
-            if (dup2(fd, 0) != -1) {
-                printf("dup2 succeeded for input redirection!");
-                fflush(stdout);
-            }
+            redirectInput(input->inputRedir);
+        }
+        else if (input->background) {
+            redirectInput("/dev/null");
         }
 
-        // Check for input redirection
+        // Check for output redirection
         if (input->outputRedir) {
-            int fd = open(input->outputRedir, O_WRONLY | O_CREAT | O_TRUNC, 0640);
-            if (fd == -1) {
-                printf("cannot open %s for output\n", input->inputRedir);
-                fflush(stdout);
-                //perror("Error");
-                exit(1);
-            }
-            // TODO: close fd
-
-            if (dup2(fd, 1) != -1) {
-                printf("dup2 succeeded for output redirection!");
-                fflush(stdout);
-            }
+            redirectOutput(input->outputRedir);
+        }
+        else if (input->background) {
+            redirectOutput("/dev/null");
         }
 
         // Run an arbitrary command using execvp
