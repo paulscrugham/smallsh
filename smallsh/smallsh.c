@@ -11,11 +11,20 @@ int main(void)
 	char* prompt = ": ";
 	char* exVar = "$$";
 	int sentinel = 1;
+	int status = 0;
+	int lastBackgroundPid;
+	char* exitStatusMessage = "exit value";
+	char* termStatusMessage = "terminated by signal";
 
 	while (sentinel) {
 		char* inputString = NULL;
 		size_t buflen = 0;
 		struct userInput* input;
+
+		// TODO: Check status of any open background child processes and
+		// - print exit status if ended
+		// - clean up if ended
+
 		// Prompt user for input
 		printf(prompt);
 		getline(&inputString, &buflen, stdin);
@@ -55,12 +64,27 @@ int main(void)
 			cdBuiltIn(input->args[1]);
 		}
 		else if (strcmp(input->args[0], "status") == 0) {
-			// Run command
-
+			if (WIFEXITED(status)) {
+				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(status));
+			}
+			else if (WIFSIGNALED(status)) {
+				printf("%s %d\n", termStatusMessage, WTERMSIG(status));
+			}
 		}
 		// Run an arbitrary command
 		else {
-			runArbitrary(input);
+			
+			if (input->background) {
+				// If background process, runArbitrary returns the child pid
+				lastBackgroundPid = runArbitrary(input);
+				printf("background child pid in main = %d\n", lastBackgroundPid);
+			}
+			else {
+				// If foreground process, runArbitrary returns a status code
+				status = runArbitrary(input);
+				printf("foreground child pid in main = %d\n", status);
+			}
+			
 		}
 
 		// Print output

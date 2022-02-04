@@ -12,6 +12,7 @@
 #include <unistd.h> 
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <errno.h>
 
 struct userInput
 {
@@ -150,7 +151,7 @@ void cdBuiltIn(char* dirPath) {
     }
 }
 
-void runArbitrary(struct userInput* input) {
+int runArbitrary(struct userInput* input) {
     // Fork a new process
     pid_t spawnPid = fork();
     int childStatus;
@@ -159,7 +160,6 @@ void runArbitrary(struct userInput* input) {
     case -1:
         perror("fork()\n");
         exit(1);
-        break;
     case 0:
         // Check for input redirection
         if (input->inputRedir) {
@@ -167,8 +167,8 @@ void runArbitrary(struct userInput* input) {
             int fd = open(input->inputRedir, O_RDONLY);
             if (fd == -1) {
                 // TODO: Set exit status
-                printf("open() failed on \"%s\"\n", input->inputRedir);
-                perror("Error");
+                printf("cannot open %s for input\n", input->inputRedir);
+                //perror("Error");
                 exit(1);
             }
             // TODO: close fd
@@ -182,8 +182,8 @@ void runArbitrary(struct userInput* input) {
         if (input->outputRedir) {
             int fd = open(input->outputRedir, O_WRONLY | O_CREAT | O_TRUNC, 0640);
             if (fd == -1) {
-                printf("open() failed on \"%s\"\n", input->inputRedir);
-                perror("Error");
+                printf("cannot open %s for output\n", input->inputRedir);
+                //perror("Error");
                 exit(1);
             }
             // TODO: close fd
@@ -195,19 +195,22 @@ void runArbitrary(struct userInput* input) {
 
         // Run an arbitrary command using execvp
         execvp(input->args[0], input->args);
-        perror("execvpe");
+        perror(input->args[0]);
         exit(2);
         break;
     default:
+        // Handle foreground vs background execution
         if (input->background) {
-            printf("background pid is %d\n", getpid());
-            spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
-            // TODO: print status when background job is complete
+            printf("background pid in runArbitrary() is %d\n", spawnPid);
+            waitpid(spawnPid, &childStatus, WNOHANG);
+            return spawnPid;
         }
         else {
-            spawnPid = waitpid(spawnPid, &childStatus, 0);
+            printf("foreground pid in runArbitrary() is %d\n", spawnPid);
+            waitpid(spawnPid, &childStatus, 0);
+            return childStatus;
         }
-        // exit(0);
-        break;
+
+        
     }
 }
