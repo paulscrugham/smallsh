@@ -17,10 +17,25 @@ int main(void)
 	char* exitStatusMessage = "exit value";
 	char* termStatusMessage = "terminated by signal";
 
+	// Initialize signal handlers
+	struct sigaction SIGINT_action = { {0} };
+
+	// Register handle_SIGINT as the signal handler
+	SIGINT_action.sa_handler = SIG_IGN;
+	// Block all catchable signals while handle_SIGINT is running
+	sigfillset(&SIGINT_action.sa_mask);
+	// Restart flag for getline
+	SIGINT_action.sa_flags = SA_RESTART;
+
+	// Install the signal handler
+	sigaction(SIGINT, &SIGINT_action, NULL);
+
+
 	while (sentinel) {
 		char* inputString = NULL;
 		size_t buflen = 0;
 		
+		// Catch background processes and print exit/termination status
 		while ((childPid = waitpid(-1, &bgStatus, WNOHANG)) > 0) {
 			printf("background pid %d is done: ", childPid);
 			if (WIFEXITED(bgStatus)) {

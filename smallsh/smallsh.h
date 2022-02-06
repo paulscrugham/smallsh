@@ -213,6 +213,22 @@ int runArbitrary(struct userInput* input) {
             redirectOutput("/dev/null");
         }
 
+        // If foreground process, reset SIGINT to default action
+        if (!input->background) {
+            struct sigaction SIGINT_action = { {0} };
+
+            // Register handle_SIGINT as the signal handler
+            SIGINT_action.sa_handler = SIG_DFL;
+            // Block all catchable signals while handle_SIGINT is running
+            sigfillset(&SIGINT_action.sa_mask);
+            // Restart flag for getline
+            SIGINT_action.sa_flags = SA_RESTART;
+
+            // Install the signal handler
+            sigaction(SIGINT, &SIGINT_action, NULL);
+        }
+
+
         // Run an arbitrary command using execvp
         execvp(input->args[0], input->args);
         perror(input->args[0]);
