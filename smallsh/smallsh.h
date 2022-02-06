@@ -88,29 +88,31 @@ int countStringInstances(char* var, char* sentence) {
 }
 
 
-int expandVar(char* var, char* newVar, char* sentence) {
-    int sentinel = 0;
-    char* start = sentence;
+char* expandVar(char* inputString, int numVars, char* oldVar) {
+    // Get PID as string
+    pid_t pid = getpid();
+    char* newVar = calloc(21, sizeof(char));
+    sprintf(newVar, "%d", pid);
+
+    // Calculate string length delta
+    int delta = (strlen(newVar) - strlen(oldVar)) * numVars;
+    // Duplicate and allocate memory for new string
+    char* result = strdup(inputString);
+    result = realloc(result, ((strlen(inputString) + delta) + 1) * sizeof(char));
+
+    char* start = result;
     char* next;
-
-    // Resize sentence to fit new expanded variables
-    int numVars = countStringInstances(var, sentence);
-    int delta = (strlen(newVar) - strlen(var)) * numVars;
-    sentence = realloc(sentence, (strlen(sentence) + delta) * sizeof(char));
-
-    // Check if var exists in sentence
-    while ((start = strstr(start, var)) != NULL) {
+    // Construct new string
+    while ((start = strstr(start, oldVar)) != NULL) {
         // Replace this occurrence of var in sentence with newVar
-        
-        next = strdup(start + strlen(var));
+        next = strdup(start + strlen(oldVar));
         *start = 0;
-        strcat(sentence, newVar);
-        strcat(sentence, next);
+        strcat(result, newVar);
+        strcat(result, next);
         start = start + strlen(newVar);
-
-        sentinel = 1;
     }
-    return sentinel;
+
+    return result;
 }
 
 int isEmpty(char* inputString) {

@@ -27,7 +27,6 @@ void sigtstpOff(int signo) {
 int main(void)
 {
 	char* prompt = ": ";
-	char* exVar = "$$";
 	int sentinel = 1;
 	pid_t childPid;
 	int fgStatus = -1;
@@ -102,14 +101,18 @@ int main(void)
 		}
 
 		// Expand any occurrences of "$$" to the program's PID
-		pid_t pid = getpid();
-		char* newVar = malloc(sizeof(char) * 21);
-		sprintf(newVar, "%d", pid);
-		expandVar(exVar, newVar, inputString);
-		free(newVar);
-
-		// Parse input
-		input = parseInput(inputString);
+		char* oldVar = "$$";
+		int numVars = countStringInstances(oldVar, inputString);
+		
+		if (numVars > 0) {
+			char* expandedInput = expandVar(inputString, numVars, oldVar);
+			input = parseInput(expandedInput);
+			free(expandedInput);
+		}
+		else {
+			input = parseInput(inputString);
+		}
+		free(inputString);
 
 		// Reset background if foreground only mode is on
 		if (flag == 1) {
@@ -157,7 +160,7 @@ int main(void)
 
 		// After foreground processes have finished running, unblock SIGTSTP
 		sigprocmask(SIG_UNBLOCK, &SIGTSTP_action.sa_mask, NULL);
-		free(inputString);
+		
 
 	}
 	// TODO: cleanup running background processes
