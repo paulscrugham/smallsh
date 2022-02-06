@@ -12,14 +12,14 @@ void sigtstpOff(int);
 
 void sigtstpOn(int signo) {
 	flag = 1;
-	const char message[] = "\nEntering foreground-only mode (& is now ignored)";
+	const char message[] = "\nEntering foreground-only mode (& is now ignored)\n: ";
 	write(STDOUT_FILENO, message, sizeof message - 1);
 	signal(SIGTSTP, &sigtstpOff);
 }
 
 void sigtstpOff(int signo) {
 	flag = 0;
-	const char message[] = "\nExiting foreground-only mode";
+	const char message[] = "\nExiting foreground-only mode\n: ";
 	write(STDOUT_FILENO, message, sizeof message - 1);
 	signal(SIGTSTP, &sigtstpOn);
 }
@@ -43,10 +43,18 @@ int main(void)
 	sigaction(SIGINT, &SIGINT_action, NULL);
 
 	// Initialize and install a signal handler for SIGTSTP
-	signal(SIGTSTP, &sigtstpOn);
-	sigset_t sigtstpMask;
-	sigemptyset(&sigtstpMask);
-	sigaddset(&sigtstpMask, SIGTSTP);
+	struct sigaction SIGTSTP_action = { {0} };
+	SIGTSTP_action.sa_handler = sigtstpOn;
+	sigemptyset(&SIGTSTP_action.sa_mask);
+	sigaddset(&SIGTSTP_action.sa_mask, SIGTSTP);
+	SIGTSTP_action.sa_flags = SA_RESTART;
+	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
+
+
+	//signal(SIGTSTP, &sigtstpOn);
+	//sigset_t sigtstpMask;
+	//sigemptyset(&sigtstpMask);
+	//sigaddset(&sigtstpMask, SIGTSTP);
 
 	while (sentinel) {
 		char* inputString = NULL;
@@ -73,7 +81,7 @@ int main(void)
 		getline(&inputString, &buflen, stdin);
 
 		// After input is received, block SIGTSTP until foreground process has terminated
-		sigprocmask(SIG_BLOCK, &sigtstpMask, NULL);
+		sigprocmask(SIG_BLOCK, &SIGTSTP_action.sa_mask, NULL);
 
 		// Check for empty input string. If not empty, strip trailing newline char
 		if (strlen(inputString) == 1) {
@@ -148,12 +156,12 @@ int main(void)
 		}
 
 		// After foreground processes have finished running, unblock SIGTSTP
-		sigprocmask(SIG_UNBLOCK, &sigtstpMask, NULL);
-
-		// Print output
+		sigprocmask(SIG_UNBLOCK, &SIGTSTP_action.sa_mask, NULL);
 		free(inputString);
+
 	}
 	// TODO: cleanup running background processes
+	
 
 	return 0;
 }
