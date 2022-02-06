@@ -6,6 +6,24 @@
 
 #include "smallsh.h"
 
+volatile sig_atomic_t flag = 0;
+
+void sigtstpOff(int);
+
+void sigtstpOn(int signo) {
+	flag = 1;
+	const char message[] = "\nEntering foreground-only mode (& is now ignored)";
+	write(STDOUT_FILENO, message, sizeof message - 1);
+	signal(SIGTSTP, &sigtstpOff);
+}
+
+void sigtstpOff(int signo) {
+	flag = 0;
+	const char message[] = "\nExiting foreground-only mode";
+	write(STDOUT_FILENO, message, sizeof message - 1);
+	signal(SIGTSTP, &sigtstpOn);
+}
+
 int main(void)
 {
 	char* prompt = ": ";
@@ -17,42 +35,48 @@ int main(void)
 	char* exitStatusMessage = "exit value";
 	char* termStatusMessage = "terminated by signal";
 
-	// Initialize signal handlers
+	// Initialize a signal handler
 	struct sigaction SIGINT_action = { {0} };
 
 	// Register handle_SIGINT as the signal handler
 	SIGINT_action.sa_handler = SIG_IGN;
-	// Block all catchable signals while handle_SIGINT is running
-	sigfillset(&SIGINT_action.sa_mask);
-	// Restart flag for getline
+	sigemptyset(&SIGINT_action.sa_mask);
 	SIGINT_action.sa_flags = SA_RESTART;
 
 	// Install the signal handler
 	sigaction(SIGINT, &SIGINT_action, NULL);
 
+	signal(SIGTSTP, &sigtstpOn);
+	sigset_t sigtstpMask;
+	sigemptyset(&sigtstpMask);
+	sigaddset(&sigtstpMask, SIGTSTP);
 
 	while (sentinel) {
 		char* inputString = NULL;
 		size_t buflen = 0;
 		
-		// Catch background processes and print exit/termination status
+		// Catch any background processes and print exit/termination status
 		while ((childPid = waitpid(-1, &bgStatus, WNOHANG)) > 0) {
 			printf("background pid %d is done: ", childPid);
 			if (WIFEXITED(bgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(bgStatus));
-				//fflush(stdout);
 			}
 			else if (WIFSIGNALED(bgStatus)) {
 				printf("%s %d\n", termStatusMessage, WTERMSIG(bgStatus));
-				//fflush(stdout);
 			}
+			fflush(stdout);
 		}
 
+		// TODO: move declaration down to parseinput function
 		struct userInput* input;
 
 		// Prompt user for input
 		printf(prompt);
+		fflush(stdout);
 		getline(&inputString, &buflen, stdin);
+
+		// After input is received, block SIGTSTP until foreground process has terminated
+		sigprocmask(SIG_BLOCK, &sigtstpMask, NULL);
 
 		// Check for empty input string. If not empty, strip trailing newline char
 		if (strlen(inputString) == 1) {
@@ -82,6 +106,11 @@ int main(void)
 		// Parse input
 		input = parseInput(inputString);
 
+		// Reset background if foreground only mode is on
+		if (flag == 1) {
+			input->background = 0;
+		}
+
 		// Check if command is a smallsh built-in
 		if (strcmp(input->args[0], "exit") == 0) {
 			// TODO: kill any other processes or jobs that smallsh started
@@ -97,12 +126,11 @@ int main(void)
 			}
 			else if (WIFEXITED(fgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(fgStatus));
-				//fflush(stdout);
 			}
 			else if (WIFSIGNALED(fgStatus)) {
 				printf("%s %d\n", termStatusMessage, WTERMSIG(fgStatus));
-				//fflush(stdout);
 			}
+			fflush(stdout);
 		}
 		// Run an arbitrary command
 		else {
@@ -110,12 +138,20 @@ int main(void)
 			// Handle foreground execution
 			if (!input->background) {
 				waitpid(childPid, &fgStatus, 0);
+				
+				// Print termination status if terminated by SIGINT
+				if (WIFSIGNALED(fgStatus)) {
+					printf("%s %d\n", termStatusMessage, WTERMSIG(fgStatus));
+				}
 			}
 			else {
 				printf("background pid is %d\n", childPid);
-				//fflush(stdout);
 			}
+			fflush(stdout);
 		}
+
+		// After foreground processes have finished running, unblock SIGTSTP
+		sigprocmask(SIG_UNBLOCK, &sigtstpMask, NULL);
 
 		// Print output
 		free(inputString);
