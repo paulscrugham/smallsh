@@ -49,12 +49,6 @@ int main(void)
 	SIGTSTP_action.sa_flags = SA_RESTART;
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 
-
-	//signal(SIGTSTP, &sigtstpOn);
-	//sigset_t sigtstpMask;
-	//sigemptyset(&sigtstpMask);
-	//sigaddset(&sigtstpMask, SIGTSTP);
-
 	while (sentinel) {
 		char* inputString = NULL;
 		size_t buflen = 0;
@@ -121,7 +115,7 @@ int main(void)
 
 		// Check if command is a smallsh built-in
 		if (strcmp(input->args[0], "exit") == 0) {
-			// TODO: kill any other processes or jobs that smallsh started
+			// TODO: kill any other background processes or jobs that smallsh started
 			return 0;
 		}
 		else if (strcmp(input->args[0], "cd") == 0) {
@@ -163,8 +157,6 @@ int main(void)
 		
 
 	}
-	// TODO: cleanup running background processes
 	
-
 	return 0;
 }
