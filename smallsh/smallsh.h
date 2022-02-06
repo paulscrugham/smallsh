@@ -13,6 +13,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <signal.h>
 
 struct userInput
 {
@@ -220,7 +221,7 @@ int runArbitrary(struct userInput* input) {
             // Register handle_SIGINT as the signal handler
             SIGINT_action.sa_handler = SIG_DFL;
             // Block all catchable signals while handle_SIGINT is running
-            sigfillset(&SIGINT_action.sa_mask);
+            sigemptyset(&SIGINT_action.sa_mask);
             // Restart flag for getline
             SIGINT_action.sa_flags = SA_RESTART;
 

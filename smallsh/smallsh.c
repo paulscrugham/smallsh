@@ -35,17 +35,14 @@ int main(void)
 	char* exitStatusMessage = "exit value";
 	char* termStatusMessage = "terminated by signal";
 
-	// Initialize a signal handler
+	// Initialize and install a signal handler for SIGINT
 	struct sigaction SIGINT_action = { {0} };
-
-	// Register handle_SIGINT as the signal handler
 	SIGINT_action.sa_handler = SIG_IGN;
 	sigemptyset(&SIGINT_action.sa_mask);
 	SIGINT_action.sa_flags = SA_RESTART;
-
-	// Install the signal handler
 	sigaction(SIGINT, &SIGINT_action, NULL);
 
+	// Initialize and install a signal handler for SIGTSTP
 	signal(SIGTSTP, &sigtstpOn);
 	sigset_t sigtstpMask;
 	sigemptyset(&sigtstpMask);
@@ -156,5 +153,7 @@ int main(void)
 		// Print output
 		free(inputString);
 	}
+	// TODO: cleanup running background processes
+
 	return 0;
 }
