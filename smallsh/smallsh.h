@@ -231,6 +231,8 @@ int runArbitrary(struct userInput* input) {
             sigaction(SIGINT, &SIGINT_action, NULL);
         }
 
+        // TODO: set child to ignore SIGTSTP
+
 
         // Run an arbitrary command using execvp
         execvp(input->args[0], input->args);
