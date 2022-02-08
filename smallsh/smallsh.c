@@ -33,6 +33,7 @@ int main(void)
 	int bgStatus;
 	char* exitStatusMessage = "exit value";
 	char* termStatusMessage = "terminated by signal";
+	struct bgChildPIDs* bgChildList = NULL;
 
 	// Initialize and install a signal handler for SIGINT
 	struct sigaction SIGINT_action = { {0} };
@@ -56,13 +57,20 @@ int main(void)
 		// Catch any background processes and print exit/termination status
 		while ((childPid = waitpid(-1, &bgStatus, WNOHANG)) > 0) {
 			printf("background pid %d is done: ", childPid);
+			fflush(stdout);
+			
+			// Remove from bgChildList
+			bgChildList = removeChildPID(childPid, bgChildList);
+			
+			// Update status
 			if (WIFEXITED(bgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(bgStatus));
+				fflush(stdout);
 			}
 			else if (WIFSIGNALED(bgStatus)) {
 				printf("%s %d\n", termStatusMessage, WTERMSIG(bgStatus));
+				fflush(stdout);
 			}
-			fflush(stdout);
 		}
 
 		// TODO: move declaration down to parseinput function
@@ -71,6 +79,8 @@ int main(void)
 		// Prompt user for input
 		printf(prompt);
 		fflush(stdout);
+		fflush(stdin);
+		sleep(1);
 		getline(&inputString, &buflen, stdin);
 
 		// After input is received, block SIGTSTP until foreground process has terminated
@@ -115,24 +125,42 @@ int main(void)
 
 		// Check if command is a smallsh built-in
 		if (strcmp(input->args[0], "exit") == 0) {
-			// TODO: kill any other background processes or jobs that smallsh started
-			return 0;
+			// Clear background
+			input->background = 0;
+			// Catch any background processes and terminate them
+			struct bgChildPIDs* curr = bgChildList;
+			while (curr) {
+				// Terminate process
+				kill(curr->pid, SIGTERM);
+				// Clean up dead process
+				waitpid(curr->pid, &bgStatus, WNOHANG);
+				curr = curr->next;
+			}
+
+			return EXIT_SUCCESS;
 		}
 		else if (strcmp(input->args[0], "cd") == 0) {
+			// Clear background
+			input->background = 0;
 			// Run command
 			cdBuiltIn(input->args[1]);
+
 		}
 		else if (strcmp(input->args[0], "status") == 0) {
+			// Clear background
+			input->background = 0;
 			if (fgStatus == -1) {
 				printf("%s %d\n", exitStatusMessage, 0);
+				fflush(stdout);
 			}
 			else if (WIFEXITED(fgStatus)) {
 				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(fgStatus));
+				fflush(stdout);
 			}
 			else if (WIFSIGNALED(fgStatus)) {
 				printf("%s %d\n", termStatusMessage, WTERMSIG(fgStatus));
+				fflush(stdout);
 			}
-			fflush(stdout);
 		}
 		// Run an arbitrary command
 		else {
@@ -144,19 +172,30 @@ int main(void)
 				// Print termination status if terminated by SIGINT
 				if (WIFSIGNALED(fgStatus)) {
 					printf("%s %d\n", termStatusMessage, WTERMSIG(fgStatus));
+					fflush(stdout);
 				}
 			}
 			else {
 				printf("background pid is %d\n", childPid);
+				fflush(stdout);
+				// Add child PID to array
+				if (bgChildList) {
+					// Add child to current list
+					bgChildList = addChildPID(childPid, bgChildList);
+				}
+				else {
+					// Start list
+					bgChildList = createChildPID(childPid);
+				}
 			}
-			fflush(stdout);
 		}
 
 		// After foreground processes have finished running, unblock SIGTSTP
 		sigprocmask(SIG_UNBLOCK, &SIGTSTP_action.sa_mask, NULL);
-		
 
+		// free the user input struct
+		free(input);
 	}
 	
-	return 0;
+	return EXIT_FAILURE;
 }

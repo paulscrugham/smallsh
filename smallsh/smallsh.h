@@ -74,6 +74,55 @@ struct userInput* parseInput(char* inputString) {
     return currInput;
 }
 
+/* Struct for tracking running, background child PIDs */
+struct bgChildPIDs
+{
+    pid_t pid;
+    struct bgChildPIDs* next;
+};
+
+struct bgChildPIDs* createChildPID(pid_t pid) {
+    struct bgChildPIDs* currChildPID = malloc(sizeof(struct bgChildPIDs));
+    currChildPID->pid = pid;
+    currChildPID->next = NULL;
+
+    return currChildPID;
+}
+
+/* Adds an element to the front of the specified list */
+struct bgChildPIDs* addChildPID(pid_t pid, struct bgChildPIDs* list) {
+    struct bgChildPIDs* newChild = createChildPID(pid);
+    newChild->next = list;
+    return newChild;
+}
+
+/* 
+Removes the matching element from the specified list.
+Returns a pointer to the head of the list. 
+*/
+struct bgChildPIDs* removeChildPID(pid_t pid, struct bgChildPIDs* list) {
+    // Case if first item matches
+    if (list->pid == pid) {
+        return list->next;
+    }
+    // Case if item exists in the remainder of the list
+    else {
+        struct bgChildPIDs* prev = list;
+        struct bgChildPIDs* curr = list->next;
+        while (curr) {
+            if (curr->pid == pid) {
+                // Remove current element from linked list
+                prev->next = curr->next;
+                return list;
+            }
+            prev = curr;
+            curr = curr->next;
+        }
+    }
+    // Return list head if element is not found
+    return list;
+}
+
 
 int countStringInstances(char* var, char* sentence) {
     int numInstances = 0;
@@ -159,15 +208,15 @@ int redirectInput(char* newInput) {
     if (fd == -1) {
         // TODO: Set exit status
         printf("cannot open %s for input\n", newInput);
-        //fflush(stdout);
+        fflush(stdout);
         //perror("Error");
         exit(1);
     }
     // TODO: close fd
 
     if (dup2(fd, 0) != -1) {
-        printf("dup2 succeeded for input redirection!");
-        //fflush(stdout);
+        printf("dup2 succeeded for input redirection to %s!\n", newInput);
+        fflush(stdout);
     }
 
     return fd;
@@ -177,15 +226,15 @@ int redirectOutput(char* newOutput) {
     int fd = open(newOutput, O_WRONLY | O_CREAT | O_TRUNC, 0640);
     if (fd == -1) {
         printf("cannot open %s for output\n", newOutput);
-        //fflush(stdout);
+        fflush(stdout);
         //perror("Error");
         exit(1);
     }
     // TODO: close fd
 
     if (dup2(fd, 1) != -1) {
-        printf("dup2 succeeded for output redirection!");
-        //fflush(stdout);
+        printf("dup2 succeeded for output redirection to %s!\n", newOutput);
+        fflush(stdout);
     }
 
     return fd;
@@ -198,6 +247,7 @@ int runArbitrary(struct userInput* input) {
     switch (spawnPid) {
     case -1:
         perror("fork()\n");
+        fflush(stdout);
         exit(1);
     case 0:
         // Check for input redirection
@@ -232,12 +282,12 @@ int runArbitrary(struct userInput* input) {
         }
 
         // TODO: set child to ignore SIGTSTP
-
+        signal(SIGTSTP, SIG_IGN);
 
         // Run an arbitrary command using execvp
         execvp(input->args[0], input->args);
         perror(input->args[0]);
-        exit(2);
+        exit(1);
         break;
     default:
         return spawnPid;
