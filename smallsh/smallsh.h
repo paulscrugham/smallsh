@@ -63,6 +63,7 @@ struct userInput* parseInput(char* inputString) {
         }
     }
 
+    // TODO: Fix so arbitrary strings do not trigger a background process
     // Check if last token is an &
     if (*saveptr && *saveptr == '&') {
         currInput->background = 1;
