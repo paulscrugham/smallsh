@@ -107,6 +107,9 @@
   <ItemGroup>
     <ClInclude Include="smallsh.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="README.txt" />
+  </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <CLanguageStandard>gnu99</CLanguageStandard>
