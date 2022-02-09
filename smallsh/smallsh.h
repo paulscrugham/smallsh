@@ -290,21 +290,12 @@ void cdBuiltIn(char* dirPath) {
 int redirectInput(char* newInput) {
     int fd = open(newInput, O_RDONLY);
     if (fd == -1) {
-        // TODO: Set exit status
         printf("cannot open %s for input\n", newInput);
         fflush(stdout);
-        //perror("Error");
         exit(1);
     }
-    // TODO: close fd
-
-    if (dup2(fd, STDIN_FILENO) != -1) {
-        //printf("dup2 succeeded for input redirection to %s!\n", newInput);
-        //fflush(stdout);
-    }
     else {
-        //printf("dup2 failed for input redirection to %s\n", newInput);
-        //fflush(stdout);
+        dup2(fd, STDIN_FILENO);
     }
 
     return fd;
@@ -315,18 +306,10 @@ int redirectOutput(char* newOutput) {
     if (fd == -1) {
         printf("cannot open %s for output\n", newOutput);
         fflush(stdout);
-        //perror("Error");
         exit(1);
     }
-    // TODO: close fd
-
-    if (dup2(fd, STDOUT_FILENO) != -1) {
-        //printf("dup2 succeeded for output redirection to %s!\n", newOutput);
-        //fflush(stdout);
-    }
     else {
-        //printf("dup2 failed for output redirection to %s\n", newOutput);
-        //fflush(stdout);
+        dup2(fd, STDOUT_FILENO);
     }
 
     return fd;
@@ -373,7 +356,7 @@ int runArbitrary(struct userInput* input) {
             sigaction(SIGINT, &SIGINT_action, NULL);
         }
 
-        // TODO: set child to ignore SIGTSTP
+        // Set child ps to ignore SIGTSTP
         signal(SIGTSTP, SIG_IGN);
 
         // Run an arbitrary command using execvp
@@ -383,7 +366,5 @@ int runArbitrary(struct userInput* input) {
         break;
     default:
         return spawnPid;
-
-        
     }
 }
