@@ -72,6 +72,7 @@ struct bgChildPIDs* removeChildPID(pid_t pid, struct bgChildPIDs* list) {
             if (curr->pid == pid) {
                 // Remove current element from linked list
                 prev->next = curr->next;
+                free(curr);
                 return list;
             }
             prev = curr;
@@ -247,7 +248,9 @@ char* expandVar(char* inputString, int numVars, char* oldVar) {
         strcat(result, newVar);
         strcat(result, next);
         start = start + strlen(newVar);
+        free(next);
     }
+    free(newVar);
 
     return result;
 }
@@ -367,5 +370,31 @@ int runArbitrary(struct userInput* input) {
         break;
     default:
         return spawnPid;
+    }
+}
+
+void freeInputStruct(struct userInput* input) {
+    // Clear args
+    int i = 0;
+    while (input->args[i] != 0) {
+        free(input->args[i]);
+        i++;
+    }
+
+    // Clear input redirection file name
+    free(input->inputRedir);
+    // Clear output redirection file name
+    free(input->outputRedir);
+    // Clear struct
+    free(input);
+}
+
+void freeChildPIDList(struct bgChildPIDs* list) {
+    struct bgChildPIDs* temp;
+
+    while (list != NULL) {
+        temp = list->next;
+        free(list);
+        list = temp;
     }
 }

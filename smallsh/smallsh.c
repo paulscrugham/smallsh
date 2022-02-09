@@ -10,6 +10,8 @@ int main(void)
 {
 	char* prompt = ": ";
 	char* oldVar = "$$";
+	char* inputString = NULL;
+	size_t buflen = 0;
 	int sentinel = 1;
 	pid_t childPid;
 	int fgStatus = -1;
@@ -17,6 +19,7 @@ int main(void)
 	char* exitStatusMessage = "exit value";
 	char* termStatusMessage = "terminated by signal";
 	struct bgChildPIDs* bgChildList = NULL;
+
 
 	// Initialize and install a signal handler for SIGINT
 	struct sigaction SIGINT_action = { {0} };
@@ -34,10 +37,6 @@ int main(void)
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 
 	while (sentinel) {
-		// Initialize/reset variables for storing the raw input string
-		char* inputString = NULL;
-		size_t buflen = 0;
-
 		// Non-blocking wait for background processes
 		waitBG(childPid, bgStatus, bgChildList, exitStatusMessage, termStatusMessage);
 
@@ -72,7 +71,6 @@ int main(void)
 		else {
 			input = parseInput(inputString);
 		}
-		free(inputString);
 
 		// Reset background if foreground only mode is on
 		if (flag == 1) {
@@ -133,8 +131,11 @@ int main(void)
 		sigprocmask(SIG_UNBLOCK, &SIGTSTP_action.sa_mask, NULL);
 
 		// free allocated memory at each loop iteration
-		free(input);
+		freeInputStruct(input);
 	}
+	
+	freeChildPIDList(bgChildList);
+	free(inputString);
 	
 	// If sentinel is still 1, the shell did not exit via the "exit" command
 	if (sentinel) {
