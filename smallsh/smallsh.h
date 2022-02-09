@@ -252,7 +252,31 @@ char* expandVar(char* inputString, int numVars, char* oldVar) {
     return result;
 }
 
+void statusBuiltIn(int fgStatus, char* exit, char* term) {
+    if (fgStatus == -1) {
+        printf("%s %d\n", exit, 0);
+        fflush(stdout);
+    }
+    else if (WIFEXITED(fgStatus)) {
+        printf("%s %d\n", exit, WEXITSTATUS(fgStatus));
+        fflush(stdout);
+    }
+    else if (WIFSIGNALED(fgStatus)) {
+        printf("%s %d\n", term, WTERMSIG(fgStatus));
+        fflush(stdout);
+    }
+}
 
+void exitBuiltIn(struct bgChildPIDs* bgChildList, int bgStatus) {
+    struct bgChildPIDs* curr = bgChildList;
+    while (curr) {
+        // Terminate process
+        kill(curr->pid, SIGTERM);
+        // Clean up dead process
+        waitpid(curr->pid, &bgStatus, WNOHANG);
+        curr = curr->next;
+    }
+}
 
 void cdBuiltIn(char* dirPath) {
     if (dirPath) {

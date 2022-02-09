@@ -9,6 +9,7 @@
 int main(void)
 {
 	char* prompt = ": ";
+	char* oldVar = "$$";
 	int sentinel = 1;
 	pid_t childPid;
 	int fgStatus = -1;
@@ -60,11 +61,10 @@ int main(void)
 		// Declare the user input struct
 		struct userInput* input;
 
-		// Expand any occurrences of "$$" to the program's PID
-		char* oldVar = "$$";
+		// Parse the input string for the command, arguments, I/O redirection, and background ps
 		int numVars = countStringInstances(oldVar, inputString);
-		
 		if (numVars > 0) {
+			// Expand any occurrences of "$$" to the program's PID
 			char* expandedInput = expandVar(inputString, numVars, oldVar);
 			input = parseInput(expandedInput);
 			free(expandedInput);
@@ -79,44 +79,27 @@ int main(void)
 			input->background = 0;
 		}
 
-		// Check if command is a smallsh built-in
+		// Check if command is the built in "exit"
 		if (strcmp(input->args[0], "exit") == 0) {
-			// Clear background
+			// Clear background flag
 			input->background = 0;
-			// Catch any background processes and terminate them
-			struct bgChildPIDs* curr = bgChildList;
-			while (curr) {
-				// Terminate process
-				kill(curr->pid, SIGTERM);
-				// Clean up dead process
-				waitpid(curr->pid, &bgStatus, WNOHANG);
-				curr = curr->next;
-			}
-
+			// Run command
+			exitBuiltIn(bgChildList, bgStatus);
 			return EXIT_SUCCESS;
 		}
+		// Check if command is the built in "cd"
 		else if (strcmp(input->args[0], "cd") == 0) {
-			// Clear background
+			// Clear background flag
 			input->background = 0;
 			// Run command
 			cdBuiltIn(input->args[1]);
-
 		}
+		// Check if command is the built in "status"
 		else if (strcmp(input->args[0], "status") == 0) {
-			// Clear background
+			// Clear background flag
 			input->background = 0;
-			if (fgStatus == -1) {
-				printf("%s %d\n", exitStatusMessage, 0);
-				fflush(stdout);
-			}
-			else if (WIFEXITED(fgStatus)) {
-				printf("%s %d\n", exitStatusMessage, WEXITSTATUS(fgStatus));
-				fflush(stdout);
-			}
-			else if (WIFSIGNALED(fgStatus)) {
-				printf("%s %d\n", termStatusMessage, WTERMSIG(fgStatus));
-				fflush(stdout);
-			}
+			// Run command
+			statusBuiltIn(fgStatus, exitStatusMessage, termStatusMessage);
 		}
 		// Run an arbitrary command
 		else {
@@ -131,6 +114,7 @@ int main(void)
 					fflush(stdout);
 				}
 			}
+			// Handle background execution
 			else {
 				printf("background pid is %d\n", childPid);
 				fflush(stdout);
