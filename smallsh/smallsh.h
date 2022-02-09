@@ -33,6 +33,76 @@ void sigtstpOff(int signo) {
     signal(SIGTSTP, &sigtstpOn);
 }
 
+/* Struct for tracking running, background child PIDs */
+struct bgChildPIDs
+{
+    pid_t pid;
+    struct bgChildPIDs* next;
+};
+
+struct bgChildPIDs* createChildPID(pid_t pid) {
+    struct bgChildPIDs* currChildPID = malloc(sizeof(struct bgChildPIDs));
+    currChildPID->pid = pid;
+    currChildPID->next = NULL;
+
+    return currChildPID;
+}
+
+/* Adds an element to the front of the specified list */
+struct bgChildPIDs* addChildPID(pid_t pid, struct bgChildPIDs* list) {
+    struct bgChildPIDs* newChild = createChildPID(pid);
+    newChild->next = list;
+    return newChild;
+}
+
+/*
+Removes the matching element from the specified list.
+Returns a pointer to the head of the list.
+*/
+struct bgChildPIDs* removeChildPID(pid_t pid, struct bgChildPIDs* list) {
+    // Case if first item matches
+    if (list->pid == pid) {
+        return list->next;
+    }
+    // Case if item exists in the remainder of the list
+    else {
+        struct bgChildPIDs* prev = list;
+        struct bgChildPIDs* curr = list->next;
+        while (curr) {
+            if (curr->pid == pid) {
+                // Remove current element from linked list
+                prev->next = curr->next;
+                return list;
+            }
+            prev = curr;
+            curr = curr->next;
+        }
+    }
+    // Return list head if element is not found
+    return list;
+}
+
+void waitBG(int childPid, int bgStatus, struct bgChildPIDs* bgChildList, char* exit, char* term) {
+    // Catch any background processes and print exit/termination status
+    while ((childPid = waitpid(-1, &bgStatus, WNOHANG)) > 0) {
+        printf("background pid %d is done: ", childPid);
+        fflush(stdout);
+
+        // Remove from bgChildList
+        bgChildList = removeChildPID(childPid, bgChildList);
+
+        // Update status
+        if (WIFEXITED(bgStatus)) {
+            printf("%s %d\n", exit, WEXITSTATUS(bgStatus));
+            fflush(stdout);
+        }
+        else if (WIFSIGNALED(bgStatus)) {
+            printf("%s %d\n", term, WTERMSIG(bgStatus));
+            fflush(stdout);
+        }
+    }
+}
+
 struct userInput
 {
     char* args[514];
@@ -93,53 +163,52 @@ struct userInput* parseInput(char* inputString) {
     return currInput;
 }
 
-/* Struct for tracking running, background child PIDs */
-struct bgChildPIDs
-{
-    pid_t pid;
-    struct bgChildPIDs* next;
-};
+int isEmpty(char* inputString) {
+    // Extract first space delimited token
+    char* temp = strdup(inputString);
+    char* token = strtok(temp, " ");
 
-struct bgChildPIDs* createChildPID(pid_t pid) {
-    struct bgChildPIDs* currChildPID = malloc(sizeof(struct bgChildPIDs));
-    currChildPID->pid = pid;
-    currChildPID->next = NULL;
-
-    return currChildPID;
-}
-
-/* Adds an element to the front of the specified list */
-struct bgChildPIDs* addChildPID(pid_t pid, struct bgChildPIDs* list) {
-    struct bgChildPIDs* newChild = createChildPID(pid);
-    newChild->next = list;
-    return newChild;
-}
-
-/* 
-Removes the matching element from the specified list.
-Returns a pointer to the head of the list. 
-*/
-struct bgChildPIDs* removeChildPID(pid_t pid, struct bgChildPIDs* list) {
-    // Case if first item matches
-    if (list->pid == pid) {
-        return list->next;
+    if (token) {
+        free(temp);
+        return 0;
     }
-    // Case if item exists in the remainder of the list
     else {
-        struct bgChildPIDs* prev = list;
-        struct bgChildPIDs* curr = list->next;
-        while (curr) {
-            if (curr->pid == pid) {
-                // Remove current element from linked list
-                prev->next = curr->next;
-                return list;
-            }
-            prev = curr;
-            curr = curr->next;
-        }
+        free(temp);
+        return 1;
     }
-    // Return list head if element is not found
-    return list;
+}
+
+int isComment(char* inputString, char commentChar) {
+    // Extract first space delimited token
+    char* temp = strdup(inputString);
+    char* token = strtok(temp, " ");
+
+    if (token[0] == commentChar) {
+        free(temp);
+        return 1;
+    }
+    else {
+        free(temp);
+        return 0;
+    }
+}
+
+int preParser(char* inputString) {
+    if (strlen(inputString) == 1) {
+        return 0;
+    }
+
+    // Check if input is empty
+    if (isEmpty(inputString)) {
+        return 0;
+    }
+
+    // Check if input was a comment
+    if (isComment(inputString, '#')) {
+        return 0;
+    }
+    
+    return 1;
 }
 
 
@@ -183,35 +252,7 @@ char* expandVar(char* inputString, int numVars, char* oldVar) {
     return result;
 }
 
-int isEmpty(char* inputString) {
-    // Extract first space delimited token
-    char* temp = strdup(inputString);
-    char* token = strtok(temp, " ");
 
-    if (token) {
-        free(temp);
-        return 0;
-    }
-    else {
-        free(temp);
-        return 1;
-    }
-}
-
-int isComment(char* inputString, char commentChar) {
-    // Extract first space delimited token
-    char* temp = strdup(inputString);
-    char* token = strtok(temp, " ");
-
-    if (token[0] == commentChar) {
-        free(temp);
-        return 1;
-    }
-    else {
-        free(temp);
-        return 0;
-    }
-}
 
 void cdBuiltIn(char* dirPath) {
     if (dirPath) {
