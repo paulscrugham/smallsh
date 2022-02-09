@@ -80,7 +80,6 @@ int main(void)
 		printf(prompt);
 		fflush(stdout);
 		fflush(stdin);
-		sleep(1);
 		getline(&inputString, &buflen, stdin);
 
 		// After input is received, block SIGTSTP until foreground process has terminated

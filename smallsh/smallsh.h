@@ -41,32 +41,32 @@ struct userInput* parseInput(char* inputString) {
 
     // Get command arguments
     int i = 1;
-    while (*saveptr && *saveptr != '<' && *saveptr != '>' && *saveptr != '&') {
+    while (*saveptr) {
         token = strtok_r(NULL, " ", &saveptr);
-        currInput->args[i] = calloc(strlen(token) + 1, sizeof(char));
-        strcpy(currInput->args[i], token);
-        i++;
-    }
-
-    // Get redirect statements, if any
-    while (*saveptr && *saveptr != '&') {
-        token = strtok_r(NULL, " ", &saveptr);
-        if (*token == '<') {
+        // Check for input redirection
+        if (strcmp(token, "<") == 0) {
+            // Get next token for file name
             token = strtok_r(NULL, " ", &saveptr);
             currInput->inputRedir = calloc(strlen(token) + 1, sizeof(char));
             strcpy(currInput->inputRedir, token);
         }
-        else if (*token == '>') {
+        // Check for output redirection
+        else if (strcmp(token, ">") == 0) {
+            // Get next token for file name
             token = strtok_r(NULL, " ", &saveptr);
             currInput->outputRedir = calloc(strlen(token) + 1, sizeof(char));
             strcpy(currInput->outputRedir, token);
         }
-    }
-
-    // TODO: Fix so arbitrary strings do not trigger a background process
-    // Check if last token is an &
-    if (*saveptr && *saveptr == '&') {
-        currInput->background = 1;
+        // Check for background ps
+        else if ((strcmp(token, "&") == 0) && !*saveptr) {
+            currInput->background = 1;
+        }
+        // Get command args
+        else {
+            currInput->args[i] = calloc(strlen(token) + 1, sizeof(char));
+            strcpy(currInput->args[i], token);
+            i++;
+        }
     }
 
     // Null terminate the arguments array
@@ -215,9 +215,13 @@ int redirectInput(char* newInput) {
     }
     // TODO: close fd
 
-    if (dup2(fd, 0) != -1) {
-        printf("dup2 succeeded for input redirection to %s!\n", newInput);
-        fflush(stdout);
+    if (dup2(fd, STDIN_FILENO) != -1) {
+        //printf("dup2 succeeded for input redirection to %s!\n", newInput);
+        //fflush(stdout);
+    }
+    else {
+        //printf("dup2 failed for input redirection to %s\n", newInput);
+        //fflush(stdout);
     }
 
     return fd;
@@ -233,9 +237,13 @@ int redirectOutput(char* newOutput) {
     }
     // TODO: close fd
 
-    if (dup2(fd, 1) != -1) {
-        printf("dup2 succeeded for output redirection to %s!\n", newOutput);
-        fflush(stdout);
+    if (dup2(fd, STDOUT_FILENO) != -1) {
+        //printf("dup2 succeeded for output redirection to %s!\n", newOutput);
+        //fflush(stdout);
+    }
+    else {
+        //printf("dup2 failed for output redirection to %s\n", newOutput);
+        //fflush(stdout);
     }
 
     return fd;
