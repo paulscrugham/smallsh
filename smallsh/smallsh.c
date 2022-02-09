@@ -13,7 +13,7 @@ int main(void)
 	int sentinel = 1;
 	pid_t childPid;
 	int fgStatus = -1;
-	int bgStatus;
+	int bgStatus = -1;
 	char* exitStatusMessage = "exit value";
 	char* termStatusMessage = "terminated by signal";
 	struct bgChildPIDs* bgChildList = NULL;
