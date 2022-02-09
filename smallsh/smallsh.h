@@ -267,7 +267,7 @@ void statusBuiltIn(int fgStatus, char* exit, char* term) {
     }
 }
 
-void exitBuiltIn(struct bgChildPIDs* bgChildList, int bgStatus) {
+int exitBuiltIn(struct bgChildPIDs* bgChildList, int bgStatus) {
     struct bgChildPIDs* curr = bgChildList;
     while (curr) {
         // Terminate process
@@ -276,6 +276,7 @@ void exitBuiltIn(struct bgChildPIDs* bgChildList, int bgStatus) {
         waitpid(curr->pid, &bgStatus, WNOHANG);
         curr = curr->next;
     }
+    return 0;
 }
 
 void cdBuiltIn(char* dirPath) {

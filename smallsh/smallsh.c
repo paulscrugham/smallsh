@@ -34,7 +34,7 @@ int main(void)
 	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 
 	while (sentinel) {
-		// Reset 
+		// Initialize/reset variables for storing the raw input string
 		char* inputString = NULL;
 		size_t buflen = 0;
 
@@ -84,8 +84,7 @@ int main(void)
 			// Clear background flag
 			input->background = 0;
 			// Run command
-			exitBuiltIn(bgChildList, bgStatus);
-			return EXIT_SUCCESS;
+			sentinel = exitBuiltIn(bgChildList, bgStatus);
 		}
 		// Check if command is the built in "cd"
 		else if (strcmp(input->args[0], "cd") == 0) {
@@ -133,9 +132,16 @@ int main(void)
 		// After foreground processes have finished running, unblock SIGTSTP
 		sigprocmask(SIG_UNBLOCK, &SIGTSTP_action.sa_mask, NULL);
 
-		// free the user input struct
+		// free allocated memory at each loop iteration
 		free(input);
 	}
 	
-	return EXIT_FAILURE;
+	// If sentinel is still 1, the shell did not exit via the "exit" command
+	if (sentinel) {
+		return EXIT_FAILURE;
+	}
+	// The built in "exit" command sets sentinel to 0, indicating a successful exit
+	else {
+		return EXIT_SUCCESS;
+	}
 }
