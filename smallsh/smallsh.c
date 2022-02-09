@@ -6,23 +6,7 @@
 
 #include "smallsh.h"
 
-volatile sig_atomic_t flag = 0;
 
-void sigtstpOff(int);
-
-void sigtstpOn(int signo) {
-	flag = 1;
-	const char message[] = "\nEntering foreground-only mode (& is now ignored)\n: ";
-	write(STDOUT_FILENO, message, sizeof message - 1);
-	signal(SIGTSTP, &sigtstpOff);
-}
-
-void sigtstpOff(int signo) {
-	flag = 0;
-	const char message[] = "\nExiting foreground-only mode\n: ";
-	write(STDOUT_FILENO, message, sizeof message - 1);
-	signal(SIGTSTP, &sigtstpOn);
-}
 
 int main(void)
 {
