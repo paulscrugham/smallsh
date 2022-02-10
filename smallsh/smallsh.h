@@ -19,27 +19,31 @@ volatile sig_atomic_t flag = 0;
 
 void sigtstpOff(int);
 
+/* Handler function for SIGTSTP to turn on background only mode */
 void sigtstpOn(int signo) {
     flag = 1;
     const char message[] = "\nEntering foreground-only mode (& is now ignored)\n: ";
     write(STDOUT_FILENO, message, sizeof message - 1);
+    // Set signal action to function that turns SIGTSTP off for next signal
     signal(SIGTSTP, &sigtstpOff);
 }
 
+/* Handler function for SIGTSTP to turn off background only mode */
 void sigtstpOff(int signo) {
     flag = 0;
     const char message[] = "\nExiting foreground-only mode\n: ";
     write(STDOUT_FILENO, message, sizeof message - 1);
+    // Set signal action to function that turns SIGTSTP on for next signal
     signal(SIGTSTP, &sigtstpOn);
 }
 
 /* Struct for tracking running, background child PIDs */
-struct bgChildPIDs
-{
+struct bgChildPIDs {
     pid_t pid;
     struct bgChildPIDs* next;
 };
 
+/* Creates a new linked list element to store a child pid. Returns the new element. */
 struct bgChildPIDs* createChildPID(pid_t pid) {
     struct bgChildPIDs* currChildPID = malloc(sizeof(struct bgChildPIDs));
     currChildPID->pid = pid;
@@ -48,7 +52,10 @@ struct bgChildPIDs* createChildPID(pid_t pid) {
     return currChildPID;
 }
 
-/* Adds an element to the front of the specified list */
+/* 
+Adds an element with the specified pid to the front of the specified list.
+Returns the new linked list head.
+*/
 struct bgChildPIDs* addChildPID(pid_t pid, struct bgChildPIDs* list) {
     struct bgChildPIDs* newChild = createChildPID(pid);
     newChild->next = list;
@@ -83,6 +90,7 @@ struct bgChildPIDs* removeChildPID(pid_t pid, struct bgChildPIDs* list) {
     return list;
 }
 
+/* Uses waitpid with WNOHANG to clean up any zombie child processes and print their exit status. */
 void waitBG(int childPid, int bgStatus, struct bgChildPIDs* bgChildList, char* exit, char* term) {
     // Catch any background processes and print exit/termination status
     while ((childPid = waitpid(-1, &bgStatus, WNOHANG)) > 0) {
@@ -104,14 +112,18 @@ void waitBG(int childPid, int bgStatus, struct bgChildPIDs* bgChildList, char* e
     }
 }
 
-struct userInput
-{
+/* Struct to store the parsed input string */
+struct userInput {
     char* args[514];
     char* inputRedir;
     char* outputRedir;
     int background;
 };
 
+/* 
+Parses the specified string for the command, arguments, I/O redirection, and the
+background process flag. Returns a struct containing the parsed information.
+*/
 struct userInput* parseInput(char* inputString) {
     struct userInput* currInput = malloc(sizeof(struct userInput));
 
@@ -134,19 +146,17 @@ struct userInput* parseInput(char* inputString) {
         token = strtok_r(NULL, " ", &saveptr);
         // Check for input redirection
         if (strcmp(token, "<") == 0) {
-            // Get next token for file name
             token = strtok_r(NULL, " ", &saveptr);
             currInput->inputRedir = calloc(strlen(token) + 1, sizeof(char));
             strcpy(currInput->inputRedir, token);
         }
         // Check for output redirection
         else if (strcmp(token, ">") == 0) {
-            // Get next token for file name
             token = strtok_r(NULL, " ", &saveptr);
             currInput->outputRedir = calloc(strlen(token) + 1, sizeof(char));
             strcpy(currInput->outputRedir, token);
         }
-        // Check for background ps
+        // Check for background flag
         else if ((strcmp(token, "&") == 0) && !*saveptr) {
             currInput->background = 1;
         }
@@ -164,6 +174,7 @@ struct userInput* parseInput(char* inputString) {
     return currInput;
 }
 
+/* Checks if the specified string consists of only space characters. Returns 1 if empty, and 0 if not. */
 int isEmpty(char* inputString) {
     // Extract first space delimited token
     char* temp = strdup(inputString);
@@ -179,6 +190,7 @@ int isEmpty(char* inputString) {
     }
 }
 
+/* Checks if the specified string begins with the # character. Returns 1 if it does, and 0 if not. */
 int isComment(char* inputString, char commentChar) {
     // Extract first space delimited token
     char* temp = strdup(inputString);
@@ -194,6 +206,10 @@ int isComment(char* inputString, char commentChar) {
     }
 }
 
+/* 
+Checks if the specified string is a valid input (i.e. is not empty and is not a comment).
+Returns 1 if valid, and 0 if not. 
+*/
 int preParser(char* inputString) {
     if (strlen(inputString) == 1) {
         return 0;
@@ -212,7 +228,7 @@ int preParser(char* inputString) {
     return 1;
 }
 
-
+/* Counts the number of instances of var in sentence. Returns the count as an integer. */
 int countStringInstances(char* var, char* sentence) {
     int numInstances = 0;
     char* start = sentence;
@@ -225,7 +241,10 @@ int countStringInstances(char* var, char* sentence) {
     return numInstances;
 }
 
-
+/* 
+Replaces as many instances of oldVar in inputString as specified by the integer numVars.
+Returns a new string with the expanded variables. Does not modify inputString. 
+*/
 char* expandVar(char* inputString, int numVars, char* oldVar) {
     // Get PID as string
     pid_t pid = getpid();
@@ -244,7 +263,7 @@ char* expandVar(char* inputString, int numVars, char* oldVar) {
     while ((start = strstr(start, oldVar)) != NULL) {
         // Replace this occurrence of var in sentence with newVar
         next = strdup(start + strlen(oldVar));
-        *start = 0;
+        *start = 0;  // Trim the "result" string up to the variable to be replaced
         strcat(result, newVar);
         strcat(result, next);
         start = start + strlen(newVar);
@@ -255,6 +274,7 @@ char* expandVar(char* inputString, int numVars, char* oldVar) {
     return result;
 }
 
+/* Built in shell command that prints the status of the last foreground process to run. */
 void statusBuiltIn(int fgStatus, char* exit, char* term) {
     if (fgStatus == -1) {
         printf("%s %d\n", exit, 0);
@@ -270,6 +290,10 @@ void statusBuiltIn(int fgStatus, char* exit, char* term) {
     }
 }
 
+/* 
+Built in shell command that exits the shell program. Kills any running background processes and
+cleans up any zombie processes.
+*/
 int exitBuiltIn(struct bgChildPIDs* bgChildList, int bgStatus) {
     struct bgChildPIDs* curr = bgChildList;
     while (curr) {
@@ -282,15 +306,22 @@ int exitBuiltIn(struct bgChildPIDs* bgChildList, int bgStatus) {
     return 0;
 }
 
+/* 
+Built in shell command that sets the current directory to the specified path, if provided.
+If no path is provided, the current directory is set to HOME. 
+*/
 void cdBuiltIn(char* dirPath) {
     if (dirPath) {
+        // Set current directory to specified path
         chdir(dirPath);
     }
     else {
+        // Set current directory to HOME
         chdir(getenv("HOME"));
     }
 }
 
+/*  */
 int redirectInput(char* newInput) {
     int fd = open(newInput, O_RDONLY);
     if (fd == -1) {

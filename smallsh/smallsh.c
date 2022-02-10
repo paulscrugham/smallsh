@@ -11,13 +11,13 @@ int main(void)
 	char* prompt = ": ";
 	char* oldVar = "$$";
 	char* inputString = NULL;
-	size_t buflen = 0;
-	int sentinel = 1;
-	pid_t childPid;
-	int fgStatus = -1;
-	int bgStatus = -1;
 	char* exitStatusMessage = "exit value";
 	char* termStatusMessage = "terminated by signal";
+	int sentinel = 1;
+	int fgStatus = -1;
+	int bgStatus = -1;
+	size_t buflen = 0;
+	pid_t childPid;
 	struct bgChildPIDs* bgChildList = NULL;
 
 
@@ -115,7 +115,6 @@ int main(void)
 			else {
 				printf("background pid is %d\n", childPid);
 				fflush(stdout);
-				// Add child PID to array
 				if (bgChildList) {
 					// Add child to current list
 					bgChildList = addChildPID(childPid, bgChildList);
@@ -134,6 +133,7 @@ int main(void)
 		freeInputStruct(input);
 	}
 	
+	// Free allocated heap memory
 	freeChildPIDList(bgChildList);
 	free(inputString);
 	
